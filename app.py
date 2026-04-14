@@ -43,7 +43,7 @@ def custom_preprocess(img_array):
 @st.cache_resource
 def load_model():
     # جرب الأسماء المحتملة للملف لضمان التحميل
-    possible_names = ["model.keras", "cad_cardiac_mri_model (1).keras"]
+    possible_names = "model.keras"
     model_path = None
     
     for name in possible_names:
