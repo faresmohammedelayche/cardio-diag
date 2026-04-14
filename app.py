@@ -53,18 +53,26 @@ def resize_image(img):
     return cv2.resize(img, (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_AREA)
 
 def custom_preprocess(img_array):
-    img = resize_image(img_array)
+    # Resize to SAME size as training
+    img = cv2.resize(img_array, (512, 512), interpolation=cv2.INTER_LINEAR)
 
+    # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
+    # Gaussian blur (same as training)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    # CLAHE
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    gray = clahe.apply(gray)
+    enhanced = clahe.apply(blurred)
 
-    img = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
+    # Normalize
+    normalized = enhanced.astype(np.float32) / 255.0
 
-    img = cv2.GaussianBlur(img, (3, 3), 0)
+    # 🔥 VERY IMPORTANT: reshape to match model input
+    normalized = np.expand_dims(normalized, axis=-1)  # (512,512,1)
 
-    return img.astype(np.float32) / 255.0
+    return normalized
 
 @st.cache_data
 def process_image_cached(img_array):
