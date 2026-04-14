@@ -37,7 +37,7 @@ def custom_preprocess(img_array):
 @st.cache_resource
 def load_model():
     # تم تعديل الاسم ليتطابق مع ملفك في GitHub
-    model_path = "cad_cardiac_mri_model (1).keras" 
+    model_path = "model.keras" 
     
     if os.path.exists(model_path):
         try:
