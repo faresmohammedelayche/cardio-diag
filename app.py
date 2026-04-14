@@ -12,7 +12,7 @@ st.set_page_config(page_title="CardioDiag", page_icon="🫀", layout="wide")
 # ==============================
 @st.cache_resource
 def load_model():
-    model_path = "model.keras"
+    model_path = "cad_cardiac_mri_model.keras"
     if os.path.exists(model_path):
         try:
             import tensorflow as tf
