@@ -84,7 +84,7 @@ def custom_preprocess(img_array):
 # ==============================
 @st.cache_resource
 def load_model():
-    model_path = "cad_cardiac_mri_model (1).keras"  # ou .h5
+    model_path = "cad_cardiac_mri_mode.keras"  # ou .h5
     if os.path.exists(model_path):
         try:
             import tensorflow as tf
