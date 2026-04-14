@@ -97,12 +97,27 @@ model, is_real = load_model()
 # PREDICTION
 # ==============================
 def predict(processed_img):
-    if is_real:
-        input_tensor = np.expand_dims(processed_img, axis=0)
-        proba = float(model(input_tensor, training=False)[0][0])
-    else:
+    if not is_real:
         random.seed(42)
-        proba = random.uniform(0.2, 0.8)
+        return random.uniform(0.2, 0.8)
+
+    import numpy as np
+
+    input_tensor = np.expand_dims(processed_img, axis=0)
+    preds = model(input_tensor, training=False).numpy()
+
+    # ===== AUTO DETECT OUTPUT =====
+    if preds.shape[-1] == 1:
+        # sigmoid
+        proba = float(preds[0][0])
+
+    elif preds.shape[-1] == 2:
+        # softmax
+        proba = float(preds[0][1])  # CAD class
+
+    else:
+        raise ValueError(f"Unexpected output shape: {preds.shape}")
+
     return proba
 
 # ==============================
