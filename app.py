@@ -13,7 +13,7 @@ st.set_page_config(page_title="CardioDiag", page_icon="🫀", layout="wide")
 # ==============================
 @st.cache_resource
 def load_model_strict():
-    model_path = "model.keras"
+    model_path = "cad_cardiac_mri_model.keras"
     if not os.path.exists(model_path):
         st.error(f"❌ Erreur : Le fichier {model_path} est introuvable sur le serveur.")
         st.stop() # إيقاف التطبيق تماماً إذا لم يجد الملف
