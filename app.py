@@ -1,6 +1,5 @@
 # ==============================
-# app.py - Optimized Version
-# CardioDiag - IRM Cardiaque
+# CardioDiag - FINAL VERSION
 # ==============================
 
 import streamlit as st
@@ -13,53 +12,23 @@ import random
 # ==============================
 # CONFIG
 # ==============================
-IMG_SIZE = 224
-
 st.set_page_config(
-    page_title="CardioDiag - IRM Cardiaque",
+    page_title="CardioDiag",
     page_icon="🫀",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
 # ==============================
-# CSS
+# PREPROCESSING (MATCH TRAINING)
 # ==============================
-st.markdown("""
-<style>
-.main-header {
-    font-size: 2.5rem;
-    text-align: center;
-    margin-bottom: 1rem;
-}
-.sub-header {
-    text-align: center;
-    margin-bottom: 2rem;
-    color: gray;
-}
-.footer {
-    text-align: center;
-    margin-top: 3rem;
-    font-size: 0.8rem;
-    color: gray;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ==============================
-# IMAGE PREPROCESSING
-# ==============================
-def resize_image(img):
-    return cv2.resize(img, (IMG_SIZE, IMG_SIZE), interpolation=cv2.INTER_AREA)
-
 def custom_preprocess(img_array):
-    # Resize to SAME size as training
+    # Resize to 512x512
     img = cv2.resize(img_array, (512, 512), interpolation=cv2.INTER_LINEAR)
 
-    # Convert to grayscale
+    # Grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-    # Gaussian blur (same as training)
+    # Blur
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
     # CLAHE
@@ -69,14 +38,10 @@ def custom_preprocess(img_array):
     # Normalize
     normalized = enhanced.astype(np.float32) / 255.0
 
-    # 🔥 VERY IMPORTANT: reshape to match model input
-    normalized = np.expand_dims(normalized, axis=-1)  # (512,512,1)
+    # Expand dims → (512,512,1)
+    normalized = np.expand_dims(normalized, axis=-1)
 
     return normalized
-
-@st.cache_data
-def process_image_cached(img_array):
-    return custom_preprocess(img_array)
 
 # ==============================
 # LOAD MODEL
@@ -88,16 +53,12 @@ def load_model():
     if os.path.exists(model_path):
         try:
             import tensorflow as tf
-
             model = tf.keras.models.load_model(model_path)
-            model.compile(run_eagerly=False)
-
             return model, True
         except Exception as e:
-            st.warning(f"⚠️ Model loading error: {e}")
+            st.error(f"Model error: {e}")
             return None, False
-    else:
-        return None, False
+    return None, False
 
 model, is_real = load_model()
 
@@ -106,27 +67,17 @@ model, is_real = load_model()
 # ==============================
 def predict(processed_img):
     if not is_real:
-        random.seed(42)
         return random.uniform(0.2, 0.8)
-
-    import numpy as np
 
     input_tensor = np.expand_dims(processed_img, axis=0)
     preds = model(input_tensor, training=False).numpy()
 
-    # ===== AUTO DETECT OUTPUT =====
     if preds.shape[-1] == 1:
-        # sigmoid
-        proba = float(preds[0][0])
-
+        return float(preds[0][0])
     elif preds.shape[-1] == 2:
-        # softmax
-        proba = float(preds[0][1])  # CAD class
-
+        return float(preds[0][1])
     else:
         raise ValueError(f"Unexpected output shape: {preds.shape}")
-
-    return proba
 
 # ==============================
 # SIDEBAR
@@ -134,37 +85,26 @@ def predict(processed_img):
 with st.sidebar:
     st.title("⚙️ Paramètres")
 
-    threshold = st.slider(
-        "Seuil de décision",
-        0.0, 1.0, 0.5, 0.01
-    )
-
-    st.markdown("---")
-
-    st.subheader("Validation (optionnelle)")
-    true_label = st.radio(
-        "Classe réelle",
-        ["Non renseignée", "Normal", "CAD"]
-    )
+    threshold = st.slider("Seuil de décision", 0.0, 1.0, 0.5, 0.01)
 
     st.markdown("---")
 
     if is_real:
-        st.success("Modèle réel chargé")
+        st.success("✅ Modèle chargé")
     else:
-        st.warning("Mode simulation")
+        st.warning("⚠️ Mode simulation")
 
 # ==============================
 # MAIN UI
 # ==============================
-st.markdown('<div class="main-header">🫀 CardioDiag</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Diagnostic IRM Cardiaque assisté par IA</div>', unsafe_allow_html=True)
+st.title("🫀 CardioDiag")
+st.caption("Diagnostic IRM Cardiaque par IA")
 
 col1, col2 = st.columns(2)
 
 with col1:
     uploaded_file = st.file_uploader(
-        "Charger une image IRM",
+        "📂 Charger une image IRM",
         type=["png", "jpg", "jpeg", "bmp", "tiff"]
     )
 
@@ -176,68 +116,57 @@ if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")
     original = np.array(image)
 
-    processed = process_image_cached(original)
+    processed = custom_preprocess(original)
 
-    # Display images
+    # DISPLAY
     with col2:
-        st.markdown("### Visualisation")
+        st.subheader("Visualisation")
         c1, c2 = st.columns(2)
+
         with c1:
             st.image(original, caption="Original", use_container_width=True)
-        with c2:
-            st.image(processed, caption="Prétraité", use_container_width=True)
 
-    # Prediction
+        with c2:
+            st.image(processed.squeeze(), caption="Prétraité", use_container_width=True)
+
+    # PREDICTION
     proba = predict(processed)
 
-    if proba >= threshold:
-        diagnosis = "CAD (maladie coronarienne)"
-        confidence = proba
-    else:
-        diagnosis = "Normal"
-        confidence = 1 - proba
+    # DECISION LOGIC (CORRECT)
+    is_cad = proba >= threshold
 
-    # Results
+    diagnosis = "CAD (maladie coronarienne)" if is_cad else "Normal"
+    confidence = proba if is_cad else (1 - proba)
+
+    # RESULTS
     st.markdown("---")
-    st.markdown("## Résultat")
+    st.subheader("Résultat")
 
-    m1, m2, m3 = st.columns(3)
-
-    m1.metric("Diagnostic", diagnosis)
-    m2.metric("Probabilité CAD", f"{proba:.2%}")
-    m3.metric("Confiance", f"{confidence:.2%}")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Diagnostic", diagnosis)
+    c2.metric("Probabilité CAD", f"{proba:.2%}")
+    c3.metric("Confiance", f"{confidence:.2%}")
 
     st.progress(proba)
 
-    if diagnosis.startswith("CAD"):
-        st.warning("Consultation médicale recommandée")
+    if is_cad:
+        st.warning("⚠️ Consultation médicale recommandée")
     else:
-        st.success("Image normale")
+        st.success("✅ Image normale")
 
-    # ==========================
-    # VALIDATION
-    # ==========================
-    if true_label != "Non renseignée":
-        st.markdown("---")
-
-        expected = true_label
-        predicted = "CAD" if "CAD" in diagnosis else "Normal"
-
-        if expected == predicted:
-            st.success("Prédiction correcte")
-        else:
-            st.error("Prédiction incorrecte")
+    # DEBUG (يمكن حذفه لاحقًا)
+    st.markdown("---")
+    st.caption("Debug info")
+    st.write("Probability:", proba)
+    st.write("Threshold:", threshold)
+    st.write("Processed mean:", processed.mean())
 
 else:
     with col2:
-        st.info("Chargez une image pour commencer")
+        st.info("👈 قم برفع صورة للبدء")
 
 # ==============================
 # FOOTER
 # ==============================
 st.markdown("---")
-st.markdown("""
-<div class="footer">
-Application éducative - ne remplace pas un médecin
-</div>
-""", unsafe_allow_html=True)
+st.caption("⚠️ هذا التطبيق لأغراض تعليمية فقط")
