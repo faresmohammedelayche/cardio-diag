@@ -36,20 +36,16 @@ def custom_preprocess(img_array):
 # ==============================
 @st.cache_resource
 def load_model():
-    # تم تعديل الاسم ليتطابق مع ملفك في GitHub
     model_path = "model.keras"
-    
     if os.path.exists(model_path):
         try:
             import tensorflow as tf
-            model = tf.keras.models.load_model(model_path)
+            # إضافة compile=False تسرع التحميل وتتجنب أخطاء التوقيع
+            model = tf.keras.models.load_model(model_path, compile=False)
             return model, True
         except Exception as e:
-            st.error(f"⚠️ Erreur de chargement : {e}")
+            st.error(f"⚠️ Erreur : {e}")
             return None, False
-    else:
-        st.error(f"❌ Fichier '{model_path}' introuvable. Vérifiez le nom sur GitHub.")
-        return None, False
 
 model, is_loaded = load_model()
 
