@@ -12,15 +12,20 @@ st.set_page_config(page_title="CardioDiag", page_icon="🫀", layout="wide")
 # ==============================
 @st.cache_resource
 def load_model():
-    model_path = "cad_cardiac_mri_model.keras"
+    model_path = "model.keras"
     if os.path.exists(model_path):
         try:
             import tensorflow as tf
-            # استخدام compile=False ضروري لتخطي مشاكل الإصدارات المختلفة
+            from tensorflow.keras import mixed_precision
+            
+            # السماح بالدقة المختلطة لأن نموذجك تم تدريبه بها (كما ظهر في الخطأ)
+            mixed_precision.set_global_policy('mixed_float16')
+            
+            # التحميل مع تعطيل الـ compile لتجنب مشاكل الطبقات غير المعروفة
             model = tf.keras.models.load_model(model_path, compile=False)
             return model, True
         except Exception as e:
-            st.error(f"Erreur technique : {e}")
+            st.error(f"Erreur de structure : {e}")
             return None, False
     return None, False
 
