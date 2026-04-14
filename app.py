@@ -84,7 +84,7 @@ def custom_preprocess(img_array):
 # ==============================
 @st.cache_resource
 def load_model():
-    model_path = "model.keras"  # ou .h5
+    model_path = "model.h5"  # ou .h5
     if os.path.exists(model_path):
         try:
             import tensorflow as tf
