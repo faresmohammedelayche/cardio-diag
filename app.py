@@ -35,18 +35,16 @@ model, is_loaded = load_model()
 # PRÉTRAITEMENT
 # ==============================
 def preprocess_image(img_array):
-    # تحجيم الصورة إلى 512x512 (كما في التدريب)
-    img = cv2.resize(img_array, (512, 512))
+    # تغيير الحجم إلى 225x225 بناءً على تفاصيل الخطأ (input_layer_3)
+    img = cv2.resize(img_array, (225, 225)) 
     if len(img.shape) == 3:
         img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     
-    # تحسين التباين CLAHE
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     img = clahe.apply(img)
     
-    # التطبيع
     img = img.astype(np.float32) / 255.0
-    img = np.expand_dims(img, axis=(0, -1)) # Shape (1, 512, 512, 1)
+    img = np.expand_dims(img, axis=(0, -1)) # Shape (1, 225, 225, 1)
     return img
 
 # ==============================
